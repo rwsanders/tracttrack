@@ -1,6 +1,7 @@
 node_modules/
 dist/
 deploy/
+deploy.zip
 .env
 .env.local
 *.log

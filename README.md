@@ -22,6 +22,18 @@ npm start          # serves the API and the built app on :8787 (set PORT to chan
 
 To host it anywhere that runs Node, `npm run package` writes a self-contained `deploy/` folder (bundled server, built app, data; no `node_modules`). Upload that folder and start it with `npm start`; it listens on `PORT`.
 
+### Dev deployment (Azure)
+
+A development copy runs on Azure App Service (Free tier) at https://tracttrack-dev-35abf3.azurewebsites.net, in resource group `tracttrack-dev`. To push an update, with the Azure CLI signed in:
+
+```bash
+npm run package
+(cd deploy && zip -qr ../deploy.zip .)
+az webapp deploy -g tracttrack-dev -n tracttrack-dev-35abf3 --src-path deploy.zip --type zip
+```
+
+The app's startup command is `node server.mjs`. Deleting the resource group removes everything.
+
 Checks:
 
 ```bash
