@@ -20,6 +20,8 @@ npm run build
 npm start          # serves the API and the built app on :8787 (set PORT to change)
 ```
 
+To host it anywhere that runs Node, `npm run package` writes a self-contained `deploy/` folder (bundled server, built app, data; no `node_modules`). Upload that folder and start it with `npm start`; it listens on `PORT`.
+
 Checks:
 
 ```bash
