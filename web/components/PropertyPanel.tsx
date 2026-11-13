@@ -9,10 +9,12 @@ import { Land } from './sections/Land.tsx';
 import { Minerals } from './sections/Minerals.tsx';
 import { Overview, type Tab } from './sections/Overview.tsx';
 import { Taxes } from './sections/Taxes.tsx';
+import { Value } from './sections/Value.tsx';
 import { Loaded } from './ui.tsx';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
+  { id: 'market', label: 'Value' },
   { id: 'taxes', label: 'Taxes' },
   { id: 'minerals', label: 'Minerals' },
   { id: 'flood', label: 'Flood' },
@@ -34,11 +36,20 @@ interface Props {
 export function PropertyPanel({ parcels, index, onIndex, reports, onRetry, saved, onToggleSaved, onClose }: Props) {
   const parcel = parcels[index];
   const [tab, setTab] = useState<Tab>('overview');
+  const [priceRequest, setPriceRequest] = useState<{ price: number; nonce: number } | null>(null);
+  const tabs = useRef<HTMLElement>(null);
   const [copied, setCopied] = useState(false);
   const body = useRef<HTMLDivElement>(null);
 
   // A new parcel starts back at the overview; a new tab starts at its top.
-  useEffect(() => setTab('overview'), [parcel.id]);
+  useEffect(() => {
+    setTab('overview');
+    setPriceRequest(null);
+  }, [parcel.id]);
+  // The tab strip scrolls sideways on narrow panels; keep the current tab in view.
+  useEffect(() => {
+    tabs.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [tab]);
   useEffect(() => {
     // Braces matter: scrollTo returns a promise in newer browsers, which React would treat as a cleanup.
     body.current?.scrollTo({ top: 0 });
@@ -97,7 +108,7 @@ export function PropertyPanel({ parcels, index, onIndex, reports, onRetry, saved
           <dd>{acres(acreage)}</dd>
         </div>
         <div>
-          <dt>Market value</dt>
+          <dt>Appraised</dt>
           <dd>{parcel.marketValue ? moneyCompact(parcel.marketValue) : DASH}</dd>
         </div>
         <div>
@@ -110,7 +121,7 @@ export function PropertyPanel({ parcels, index, onIndex, reports, onRetry, saved
         </div>
       </dl>
 
-      <nav className="tabs" role="tablist" aria-label="Report sections">
+      <nav className="tabs" role="tablist" aria-label="Report sections" ref={tabs}>
         {TABS.map((t) => (
           <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>
             {t.label}
@@ -120,6 +131,17 @@ export function PropertyPanel({ parcels, index, onIndex, reports, onRetry, saved
 
       <div className="panel-body" ref={body} role="tabpanel">
         {tab === 'overview' && <Overview parcel={parcel} reports={reports} onTab={setTab} />}
+        {tab === 'market' && (
+          <Value
+            parcel={parcel}
+            market={reports.market}
+            onRetry={() => onRetry('market')}
+            onUsePrice={(price) => {
+              setPriceRequest((prev) => ({ price, nonce: (prev?.nonce ?? 0) + 1 }));
+              setTab('costs');
+            }}
+          />
+        )}
         {tab === 'taxes' && (
           <Loaded state={reports.taxes} onRetry={() => onRetry('taxes')}>
             {(r) => <Taxes report={r} />}
@@ -142,7 +164,7 @@ export function PropertyPanel({ parcels, index, onIndex, reports, onRetry, saved
         )}
         {/* Stays mounted so assumptions survive tab switches; keyed so they reset with the tract. */}
         <div hidden={tab !== 'costs'}>
-          <Costs key={parcel.id} parcel={parcel} taxes={reports.taxes} />
+          <Costs key={parcel.id} parcel={parcel} taxes={reports.taxes} priceRequest={priceRequest} />
         </div>
       </div>
     </aside>

@@ -24,6 +24,13 @@ export function acres(v: number | null | undefined): string {
   return v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
+/** "40 to 160 acres": a size band, rounded so the two ends read alike. */
+export function acreRange(min: number, max: number): string {
+  const whole = min >= 10;
+  const show = (v: number) => (whole ? Math.round(v).toLocaleString('en-US') : acres(v));
+  return `${show(min)} to ${show(max)} acres`;
+}
+
 export function percent(v: number | null | undefined, digits = 0): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return DASH;
   if (v > 0 && v < 1 && digits === 0) return '<1%';

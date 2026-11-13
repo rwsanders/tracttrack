@@ -52,7 +52,14 @@ function NumberField({ label, value, onChange, prefix, suffix, step = 1, hint }:
 
 const round = (v: number, digits: number) => Math.round(v * 10 ** digits) / 10 ** digits;
 
-export function Costs({ parcel, taxes }: { parcel: Parcel; taxes: Loadable<TaxReport> }) {
+interface CostsProps {
+  parcel: Parcel;
+  taxes: Loadable<TaxReport>;
+  /** A price sent over from the Value tab; `nonce` changes on every request. */
+  priceRequest: { price: number; nonce: number } | null;
+}
+
+export function Costs({ parcel, taxes, priceRequest }: CostsProps) {
   const market = parcel.marketValue ?? 0;
   const [input, setInput] = useState<CostInputs>({
     price: market,
@@ -66,6 +73,12 @@ export function Costs({ parcel, taxes }: { parcel: Parcel; taxes: Loadable<TaxRe
   });
   const [rateEdited, setRateEdited] = useState(false);
   const set = (patch: Partial<CostInputs>) => setInput((prev) => ({ ...prev, ...patch }));
+
+  useEffect(() => {
+    if (priceRequest) setInput((prev) => ({ ...prev, price: priceRequest.price }));
+    // Keyed on the nonce so sending the same figure twice still applies it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceRequest?.nonce]);
 
   // Adopt the looked-up tax rate when it arrives, unless the user already set their own.
   const lookedUp = taxes.status === 'ready' ? taxes.data.totalRate : null;
@@ -135,7 +148,7 @@ export function Costs({ parcel, taxes }: { parcel: Parcel; taxes: Loadable<TaxRe
             step={1000}
             value={input.price}
             onChange={(price) => set({ price })}
-            hint={market > 0 ? `Starts at the appraisal district's ${money(market)} market value.` : 'No roll value to start from.'}
+            hint={market > 0 ? `The appraisal district's value is ${money(market)}. See the Value tab for other estimates.` : 'No roll value to start from.'}
           />
           <NumberField label="Down payment" suffix="%" value={input.downPercent} onChange={(downPercent) => set({ downPercent })} />
           <NumberField label="Interest rate" suffix="%" step={0.125} value={input.interestPercent} onChange={(interestPercent) => set({ interestPercent })} />

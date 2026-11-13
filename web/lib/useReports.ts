@@ -10,7 +10,7 @@ export type Loadable<T> =
 
 export type Reports = { [S in ReportSection]: Loadable<ReportMap[S]> };
 
-const ALL: ReportSection[] = ['taxes', 'minerals', 'flood', 'land'];
+const ALL: ReportSection[] = ['market', 'taxes', 'minerals', 'flood', 'land'];
 
 function initial(available: ReportSection[]): Reports {
   const state = {} as Record<ReportSection, Loadable<unknown>>;

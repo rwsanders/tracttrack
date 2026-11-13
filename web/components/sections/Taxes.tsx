@@ -17,8 +17,8 @@ export function Taxes({ report }: { report: TaxReport }) {
           <span className="headline-value">{money(report.totalEstimate)}</span>
           <span className="headline-note">
             {report.basisValue === null
-              ? 'No market value on the roll'
-              : `${rate(report.totalRate)} per $100 on ${money(report.basisValue)} market value`}
+              ? 'No appraised value on the roll'
+              : `${rate(report.totalRate)} per $100 on ${money(report.basisValue)} appraised value`}
           </span>
         </div>
         <table className="table">

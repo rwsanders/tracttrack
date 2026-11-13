@@ -51,6 +51,7 @@ app.post('/api/report/:section', async (c) => {
     throw new BadRequest('That report is not available for this parcel.');
   }
   const run: Record<ReportSection, (() => Promise<ReportMap[ReportSection]>) | undefined> = {
+    market: provider.market && (() => provider.market!(parcel)),
     taxes: provider.taxes && (() => provider.taxes!(parcel)),
     minerals: provider.minerals && (() => provider.minerals!(parcel)),
     flood: () => floodReport(parcel),
@@ -59,7 +60,7 @@ app.post('/api/report/:section', async (c) => {
   const work = run[section];
   if (!work) throw new BadRequest('That report is not available for this parcel.');
   // Tax estimates depend on the roll value, so it is part of the key.
-  const key = `${section}:${parcel.id}:${parcel.taxYear ?? ''}:${parcel.marketValue ?? ''}:${parcel.centroid.join(',')}`;
+  const key = `${section}:${parcel.id}:${parcel.taxYear ?? ''}:${parcel.marketValue ?? ''}:${parcel.landValue ?? ''}:${parcel.centroid.join(',')}`;
   return c.json(await reportCache.wrap(key, work));
 });
 

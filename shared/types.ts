@@ -151,9 +151,34 @@ export interface LandReport {
   sources: SourceRef[];
 }
 
-export type ReportSection = 'taxes' | 'minerals' | 'flood' | 'land';
+/** How the parcel's appraised land value compares with similar-sized parcels around it. */
+export interface MarketReport {
+  radiusMiles: number;
+  /** Acreage range a parcel had to fall in to count as similar. */
+  band: { minAcres: number; maxAcres: number };
+  comparableCount: number;
+  /** Similar-sized parcels left out because they are carried at an agricultural productivity value. */
+  productivityValued: number;
+  /** The subject's own land value looks like a productivity value, so it is no guide to price. */
+  subjectAtProductivityValue: boolean;
+  parcelsScanned: number;
+  /** Appraised land value per acre among the similar parcels: 25th percentile, median, 75th. */
+  landPerAcre: { low: number; median: number; high: number } | null;
+  subjectLandPerAcre: number | null;
+  /** Subject's land value per acre relative to the median; -12 means 12% below. */
+  subjectVsMedianPercent: number | null;
+  /** The subject's acreage at its neighbors' per-acre values, plus its own appraised improvements. */
+  impliedValue: { low: number; mid: number; high: number } | null;
+  /** True when the area held more parcels than could be read; figures then rest on a partial sample. */
+  truncated: boolean;
+  caveats: string[];
+  sources: SourceRef[];
+}
+
+export type ReportSection = 'market' | 'taxes' | 'minerals' | 'flood' | 'land';
 
 export interface ReportMap {
+  market: MarketReport;
   taxes: TaxReport;
   minerals: MineralReport;
   flood: FloodReport;

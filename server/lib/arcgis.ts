@@ -107,6 +107,40 @@ export async function identifyAt(
   return data.results ?? [];
 }
 
+interface IdentifyAreaResponse extends EsriError {
+  results?: { attributes: Record<string, string> }[];
+  exceededTransferLimit?: boolean;
+}
+
+/**
+ * Identify everything in a box, attributes only. `truncated` means the
+ * service hit its record cap and returned an arbitrary subset.
+ */
+export async function identifyArea(
+  mapServerUrl: string,
+  [w, s, e, n]: [number, number, number, number],
+  opts: { service: string; layerId: number; timeoutMs?: number },
+): Promise<{ rows: Record<string, string>[]; truncated: boolean }> {
+  const box = `${w},${s},${e},${n}`;
+  const params = new URLSearchParams({
+    f: 'json',
+    geometry: box,
+    geometryType: 'esriGeometryEnvelope',
+    sr: '4326',
+    layers: `all:${opts.layerId}`,
+    tolerance: '0',
+    mapExtent: box,
+    imageDisplay: '800,800,96',
+    returnGeometry: 'false',
+  });
+  const data = await fetchJson<IdentifyAreaResponse>(`${mapServerUrl}/identify?${params}`, {
+    service: opts.service,
+    timeoutMs: opts.timeoutMs,
+  });
+  if (data.error) throw new UpstreamError(opts.service, data.error.message ?? 'identify failed');
+  return { rows: (data.results ?? []).map((r) => r.attributes), truncated: Boolean(data.exceededTransferLimit) };
+}
+
 /** Builds a raster tile template for a MapServer's dynamic export endpoint. */
 export function exportTiles(mapServerUrl: string, layerIds: number[]): string {
   return (

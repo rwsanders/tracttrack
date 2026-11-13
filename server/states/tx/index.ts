@@ -2,6 +2,7 @@ import type { OverlayLayer } from '../../../shared/types.ts';
 import { exportTiles } from '../../lib/arcgis.ts';
 import { nationalOverlays } from '../../national/overlays.ts';
 import type { StateProvider } from '../types.ts';
+import { marketReport } from './market.ts';
 import { mineralReport, RRC, RRC_LAYERS } from './minerals.ts';
 import { parcelsAt, TX_PARCELS } from './parcels.ts';
 import { taxReport } from './taxes.ts';
@@ -63,7 +64,7 @@ export const texas: StateProvider = {
     center: [-99.3, 31.3],
     zoom: 5.6,
     overlays,
-    sections: ['taxes', 'minerals', 'flood', 'land'],
+    sections: ['market', 'taxes', 'minerals', 'flood', 'land'],
     sources: [
       { name: 'Texas Geographic Information Office (TxGIO) StratMap Land Parcels', url: 'https://geographic.texas.gov/' },
       { name: 'Railroad Commission of Texas', url: 'https://www.rrc.texas.gov/' },
@@ -71,6 +72,7 @@ export const texas: StateProvider = {
     ],
   },
   parcelsAt,
+  market: marketReport,
   taxes: taxReport,
   minerals: mineralReport,
 };

@@ -1,6 +1,6 @@
 import type { Parcel, ReportSection } from '../../../shared/types.ts';
-import { acres, DASH, longDate, money } from '../../lib/format.ts';
-import { floodSignal, landSignals, mineralSignal, pipelineSignal, taxSignal, type Signal } from '../../lib/signals.ts';
+import { acres, DASH, longDate } from '../../lib/format.ts';
+import { floodSignal, landSignals, marketSignal, mineralSignal, pipelineSignal, taxSignal, type Signal } from '../../lib/signals.ts';
 import type { Reports } from '../../lib/useReports.ts';
 import { Block, Field } from '../ui.tsx';
 
@@ -13,7 +13,12 @@ interface Row extends Signal {
 function glance(reports: Reports): { rows: Row[]; pending: number } {
   const rows: Row[] = [];
   let pending = 0;
-  const { taxes, minerals, flood, land } = reports;
+  const { market, taxes, minerals, flood, land } = reports;
+  if (market.status === 'loading') pending++;
+  if (market.status === 'ready') {
+    const signal = marketSignal(market.data);
+    if (signal) rows.push({ ...signal, tab: 'market' });
+  }
   if (taxes.status === 'loading') pending++;
   if (taxes.status === 'ready') rows.push({ ...taxSignal(taxes.data), tab: 'taxes' });
   if (minerals.status === 'loading') pending++;
@@ -31,7 +36,6 @@ function glance(reports: Reports): { rows: Row[]; pending: number } {
 
 export function Overview({ parcel, reports, onTab }: { parcel: Parcel; reports: Reports; onTab(tab: Tab): void }) {
   const { rows, pending } = glance(reports);
-  const acreage = parcel.legalAcres ?? parcel.mappedAcres;
   const acresDiffer =
     parcel.legalAcres !== null &&
     parcel.mappedAcres !== null &&
@@ -67,17 +71,6 @@ export function Overview({ parcel, reports, onTab }: { parcel: Parcel; reports: 
           <Field label="Name on roll">{parcel.owner ?? 'Not listed'}</Field>
           {parcel.careOf && <Field label="In care of">{parcel.careOf}</Field>}
           <Field label="Mailing address">{parcel.mailingAddress ?? 'Not listed'}</Field>
-        </dl>
-      </Block>
-
-      <Block title="Appraisal" aside={parcel.taxYear ? `Tax year ${parcel.taxYear}` : undefined}>
-        <dl className="fields">
-          <Field label="Land">{money(parcel.landValue)}</Field>
-          <Field label="Improvements">{money(parcel.improvementValue)}</Field>
-          <Field label="Market value">{money(parcel.marketValue)}</Field>
-          <Field label="Per acre">
-            {parcel.marketValue && acreage ? money(parcel.marketValue / acreage) : DASH}
-          </Field>
         </dl>
       </Block>
 

@@ -1,5 +1,5 @@
-import type { FloodReport, LandReport, MineralReport, TaxReport } from '../../shared/types.ts';
-import { money, percent, plural } from './format.ts';
+import type { FloodReport, LandReport, MarketReport, MineralReport, TaxReport } from '../../shared/types.ts';
+import { acreRange, money, percent, plural } from './format.ts';
 
 export type Tone = 'good' | 'warn' | 'neutral';
 
@@ -7,6 +7,27 @@ export interface Signal {
   tone: Tone;
   title: string;
   detail?: string;
+}
+
+/** Null when there were too few similar parcels to say anything. */
+export function marketSignal(r: MarketReport): Signal | null {
+  if (!r.landPerAcre) return null;
+  const where = `${plural(r.comparableCount, 'parcel')} of ${acreRange(r.band.minAcres, r.band.maxAcres)} within ${r.radiusMiles} mi.`;
+  if (r.subjectAtProductivityValue) {
+    return {
+      tone: 'neutral',
+      title: 'Land is carried at an agricultural value',
+      detail: `Similar tracts nearby are appraised at ${money(r.landPerAcre.low)} to ${money(r.landPerAcre.high)} an acre.`,
+    };
+  }
+  const diff = r.subjectVsMedianPercent;
+  if (diff === null) return { tone: 'neutral', title: `Similar tracts appraise near ${money(r.landPerAcre.median)} an acre`, detail: where };
+  if (Math.abs(diff) < 10) return { tone: 'neutral', title: 'Appraised in line with similar tracts nearby', detail: where };
+  return {
+    tone: 'neutral',
+    title: `Appraised ${Math.round(Math.abs(diff))}% ${diff < 0 ? 'below' : 'above'} similar tracts nearby`,
+    detail: where,
+  };
 }
 
 /** One-line reading of each report, used for the at-a-glance list and section banners. */
@@ -17,7 +38,7 @@ export function taxSignal(r: TaxReport): Signal {
   return {
     tone: 'neutral',
     title: `About ${money(r.totalEstimate)} a year in property tax`,
-    detail: `${r.units.map((u) => u.name).join(', ')}, before exemptions.`,
+    detail: `${r.units.map((u) => u.name).join(', ')}, on appraised value before exemptions.`,
   };
 }
 

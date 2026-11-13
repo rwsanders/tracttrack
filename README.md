@@ -47,8 +47,9 @@ No API keys or accounts are needed.
 
 | Section | What it shows | Source |
 | --- | --- | --- |
-| Overview | Owner, mailing address, site address, legal description, acreage (roll and mapped), land, improvement and market value | County appraisal districts, compiled by the Texas Geographic Information Office (TxGIO StratMap Land Parcels) |
-| Taxes | County, school district and city rates applied to market value; special districts in the county listed separately | Texas Comptroller Tax Rates and Levies; Texas Education Agency district boundaries; TxGIO city limits |
+| Overview | Owner, mailing address, site address, legal description, acreage (roll and mapped), and an at-a-glance list of flags | County appraisal districts, compiled by the Texas Geographic Information Office (TxGIO StratMap Land Parcels) |
+| Value | Appraised land and improvement value; how the land's per-acre value compares with similar-sized parcels nearby; a value range at the neighbors' figures; comparables you enter yourself | Same parcel data; your own entries (stored on the device) |
+| Taxes | County, school district and city rates applied to appraised value; special districts in the county listed separately | Texas Comptroller Tax Rates and Levies; Texas Education Agency district boundaries; TxGIO city limits |
 | Minerals | Wells on the tract, wells within one mile by status, horizontal well paths beneath it, pipelines crossing it, the original land survey and abstract | Railroad Commission of Texas |
 | Flood | FEMA zones on the tract with acres and share of the parcel in each | FEMA National Flood Hazard Layer |
 | Land | Elevation range and relief, soil map units with farmland class, drainage and slope, mapped wetlands | USGS 3DEP, USDA NRCS Soil Data Access, USFWS National Wetlands Inventory |
@@ -63,7 +64,8 @@ Other features: place, address and coordinate search; shareable links (the addre
 These are limits of the public data, and the app says so where they apply.
 
 - **Mineral ownership is not available.** No statewide database records who owns minerals in Texas; that takes a title search of county deed records. The app shows activity (wells, laterals, pipelines) as a signal of whether minerals are likely leased or severed.
-- **Tax figures are estimates.** They apply published rates to market value. Agricultural, wildlife and timber valuations and exemptions can cut the real bill sharply. Special districts are listed but not added in, because their boundaries are not published statewide.
+- **There is no sale-price data.** Texas does not make sale prices public, so every dollar figure is an appraisal district value unless you entered it. The Value tab compares a tract with its neighbors' appraisals and lets you add listings you know about; real comparable sales need a licensed data feed (see Roadmap). Some districts carry land under agricultural valuation at its productivity value; those figures (under $300 an acre) are recognized and kept out of comparisons.
+- **Tax figures are estimates.** They apply published rates to appraised value. Agricultural, wildlife and timber valuations and exemptions can cut the real bill sharply. Special districts are listed but not added in, because their boundaries are not published statewide.
 - **No search by owner name or parcel ID yet.** The state's parcel service allows lookups by location only. Owner search needs the parcel data loaded into our own database (see Roadmap).
 - **Parcel data is as current as each county's last submission** to TxGIO. The record's collection date is shown on every report. A few counties have gaps.
 - **Boundaries are tax parcels, not surveys.**
@@ -100,12 +102,12 @@ The browser draws map layers straight from the agencies' map servers. Everything
 | --- | --- |
 | `GET /api/states` | Enabled states with bounds, map layers and available report sections |
 | `GET /api/parcels/at?lat=&lng=` | Parcels covering a point |
-| `POST /api/report/{taxes,minerals,flood,land}` | One report section for the parcel in the request body |
+| `POST /api/report/{market,taxes,minerals,flood,land}` | One report section for the parcel in the request body |
 | `GET /api/geocode?q=` | Place, address or coordinate search |
 
 ### Adding a state
 
-1. Create `server/states/<code>/` with a provider that implements `StateProvider` (`server/states/types.ts`): a `config` (bounds, map layers, which sections it supports) and `parcelsAt()`. Add `taxes()` and `minerals()` when the state has usable sources; leave them out and the app shows those sections as unavailable.
+1. Create `server/states/<code>/` with a provider that implements `StateProvider` (`server/states/types.ts`): a `config` (bounds, map layers, which sections it supports) and `parcelsAt()`. Add `market()`, `taxes()` and `minerals()` when the state has usable sources; leave them out and the app shows those sections as unavailable.
 2. Register it in `server/states/registry.ts`.
 3. Add the state code to `StateCode` in `shared/types.ts` and to the check in `server/validate.ts`.
 
@@ -124,6 +126,7 @@ This rewrites `server/states/tx/data/tax-rates.json`. The file in the repository
 ## Roadmap
 
 - Load the statewide parcel file into PostGIS to enable search by owner, parcel ID and legal description, filters (acreage, value, county) and fast vector parcel layers.
+- Licensed listing and sold-price data for true comparable sales. (The Texas Real Estate Research Center publishes sales-based regional prices per acre, but its terms bar for-profit reuse without permission, so the app links to it instead of embedding it.)
 - Deed and sales history from county clerk records.
 - General Land Office data: state mineral leases and mineral-classified lands.
 - Groundwater: Texas Water Development Board well records and aquifers.

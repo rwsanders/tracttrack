@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { parseCoordinates } from '../server/geocode.ts';
 import { BadRequest, parseLngLat, parseParcel } from '../server/validate.ts';
+import { summarizeComps } from '../web/lib/comps.ts';
 import { estimateCosts, monthlyPayment } from '../web/lib/costs.ts';
-import { acres, money, moneyCompact, percent, rate } from '../web/lib/format.ts';
+import { acreRange, acres, money, moneyCompact, percent, rate } from '../web/lib/format.ts';
 import { formatHash, parseHash } from '../web/lib/url.ts';
 
 describe('monthlyPayment', () => {
@@ -47,6 +48,32 @@ describe('estimateCosts', () => {
   });
 });
 
+describe('summarizeComps', () => {
+  const comp = (price: number, size: number) => ({ id: `${price}-${size}`, label: '', price, acres: size });
+
+  it('prices the tract at the median per-acre figure of the comps', () => {
+    const s = summarizeComps([comp(1_500_000, 60), comp(2_400_000, 120), comp(900_000, 30)], 80);
+    expect(s?.perAcre).toEqual({ low: 20_000, median: 25_000, high: 30_000 });
+    expect(s?.value).toEqual({ low: 1_600_000, mid: 2_000_000, high: 2_400_000 });
+  });
+
+  it('averages the middle pair for an even count', () => {
+    expect(summarizeComps([comp(100_000, 10), comp(300_000, 10)], 1)?.perAcre.median).toBe(20_000);
+  });
+
+  it('ignores unusable comps and needs at least one', () => {
+    expect(summarizeComps([], 80)).toBeNull();
+    expect(summarizeComps([comp(0, 10), comp(100, 0)], 80)).toBeNull();
+    expect(summarizeComps([comp(100_000, 10), comp(Number.NaN, 5)], 80)?.perAcre.median).toBe(10_000);
+  });
+
+  it('still reports per-acre figures when the tract has no acreage', () => {
+    const s = summarizeComps([comp(100_000, 10)], null);
+    expect(s?.perAcre.median).toBe(10_000);
+    expect(s?.value).toBeNull();
+  });
+});
+
 describe('formatting', () => {
   it('formats money, compact money and missing values', () => {
     expect(money(1521230)).toBe('$1,521,230');
@@ -59,6 +86,12 @@ describe('formatting', () => {
     expect(acres(0.253)).toBe('0.25');
     expect(acres(80.42)).toBe('80.4');
     expect(acres(12345.6)).toBe('12,346');
+  });
+
+  it('rounds a size band consistently', () => {
+    expect(acreRange(40.13, 160.54)).toBe('40 to 161 acres');
+    expect(acreRange(320.56, 1282.25)).toBe('321 to 1,282 acres');
+    expect(acreRange(0.11, 0.46)).toBe('0.11 to 0.46 acres');
   });
 
   it('never rounds a small share down to zero', () => {
